@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pronustream - My Original Series</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Chewy&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'brand-red': '#E50914',
+                        'brand-dark': '#141414',
+                        'brand-gray': '#2b2b2b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #141414;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #141414; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Hero Gradient Fade */
+        .hero-vignette { background: linear-gradient(to top, #141414 0, transparent 60%, rgba(0,0,0,0.6) 100%); }
+        .hero-fade-bottom { background: linear-gradient(to top, #141414 0%, transparent 100%); }
+
+        /* Card Hover Effects */
+        .movie-card {
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform-origin: center center;
+        }
+        .movie-card:hover {
+            transform: scale(1.35);
+            z-index: 50;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+            border-radius: 6px;
+        }
+        .movie-card-info {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            transition-delay: 0.1s;
+        }
+        .movie-card:hover .movie-card-info { opacity: 1; }
+        .nav-transition { transition: background-color 0.3s ease; }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(50px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .modal-animate { animation: modalFadeIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+
+        /* Bubbly Logo Font */
+        .logo-font {
+            font-family: 'Chewy', cursive;
+            color: #000000;
+            -webkit-text-stroke: 1.5px #ffffff;
+            paint-order: stroke fill;
+            text-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+            letter-spacing: 1.5px;
+        }
+
+        .avatar-option {
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .avatar-option:hover {
+            transform: scale(1.1);
+        }
+        .avatar-selected {
+            border: 3px solid #E50914;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-brand-dark z-[1000] flex flex-col items-center justify-center transition-opacity duration-500">
+        <h1 class="logo-font text-5xl md:text-7xl mb-6 animate-pulse">PRONUSTREAM</h1>
+        <div class="w-12 h-12 border-4 border-gray-600 border-t-white rounded-full animate-spin"></div>
+        <p class="mt-4 text-gray-400">Connecting to Cloud Database...</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="navbar" class="fixed w-full z-50 flex items-center justify-between px-4 md:px-12 py-4 nav-transition bg-gradient-to-b from-black/80 to-transparent">
+        <div class="flex items-center gap-8">
+            <h1 class="logo-font text-3xl md:text-5xl cursor-pointer tracking-wider" onclick="window.scrollTo(0,0)">PRONUSTREAM</h1>
+            <ul class="hidden md:flex items-center gap-5 text-sm font-medium text-gray-200">
+                <li class="text-white cursor-pointer font-semibold">Home</li>
+                <li class="cursor-pointer hover:text-gray-400 transition">My Series</li>
+                <li class="cursor-pointer hover:text-gray-400 transition">Shorts</li>
+                <li onclick="window.openUploadModal()" class="cursor-pointer text-brand-red hover:text-red-400 transition font-bold flex items-center gap-1 bg-black/50 px-3 py-1 rounded-full border border-brand-red">
+                    <i class="fa-solid fa-upload"></i> Upload Video
+                </li>
+            </ul>
+        </div>
+        <div class="flex items-center gap-5 text-xl">
+            <i class="fa-solid fa-magnifying-glass cursor-pointer hover:text-gray-400 transition"></i>
+            <i class="fa-regular fa-bell cursor-pointer hover:text-gray-400 transition"></i>
+            <div class="relative group cursor-pointer" onclick="window.openSettingsModal()">
+                <div class="flex items-center gap-2">
+                    <img id="nav-profile-pic" src="https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=150&h=150&fit=crop" alt="Profile" class="w-9 h-9 rounded shadow-md object-cover border border-gray-600">
+                    <i class="fa-solid fa-gear text-sm group-hover:rotate-90 transition-transform duration-300"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="hero" class="relative h-[70vh] md:h-[85vh] w-full bg-cover bg-center transition-all duration-700">
+        <div class="absolute inset-0 hero-vignette"></div>
+        <div class="absolute inset-0 bg-black/20"></div>
+        
+        <div id="hero-content" class="absolute bottom-[20%] left-4 md:left-12 w-full md:w-1/2 z-10 flex flex-col gap-4 pr-4">
+            <!-- Populated dynamically -->
+        </div>
+        
+        <div class="absolute bottom-0 w-full h-32 hero-fade-bottom z-0"></div>
+    </header>
+
+    <!-- Main Content Rows -->
+    <main id="content" class="relative z-20 pb-20 -mt-16 md:-mt-24 px-4 md:px-12 flex flex-col gap-8 md:gap-12 min-h-[50vh]">
+        <!-- Populated dynamically -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-5xl mx-auto px-4 py-16 text-gray-500 text-sm">
+        <p>&copy; 2026 Pronustream Cloud. Database synchronized securely.</p>
+    </footer>
+
+    <!-- Video Player -->
+    <div id="video-player" class="fixed inset-0 z-[200] bg-black hidden flex-col">
+        <div class="absolute top-6 left-6 z-10">
+            <button onclick="window.closeVideo()" class="text-white text-2xl hover:text-gray-400 transition flex items-center gap-2 drop-shadow-md">
+                <i class="fa-solid fa-arrow-left"></i> <span class="text-lg font-medium">Back</span>
+            </button>
+        </div>
+        <video id="html-video" class="w-full h-full object-contain" controls>
+            <source id="video-source" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <!-- Settings / Profile Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 sm:p-6" style="background-color: rgba(0,0,0,0.8);">
+        <div class="bg-brand-dark rounded-xl w-full max-w-3xl shadow-2xl modal-animate border border-gray-700 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700 shrink-0">
+                <h2 class="text-2xl font-bold text-white"><i class="fa-solid fa-user-circle mr-2"></i> Profile Settings</h2>
+                <button onclick="window.closeSettingsModal()" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-grow custom-scrollbar">
+                <div class="mb-6">
+                    <label class="block text-gray-300 font-bold mb-2">Display Name</label>
+                    <input type="text" id="settings-username" class="w-full md:w-1/2 text-white bg-gray-800 border border-gray-600 rounded p-3 focus:outline-none focus:border-white" placeholder="Creator Name">
+                </div>
+
+                <div class="mb-4">
+                    <h3 class="text-gray-300 font-bold mb-3">Choose Profile Picture</h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-500 text-sm mb-1">Custom Image URL (Optional)</label>
+                        <input type="text" id="settings-custom-pfp" class="w-full text-white bg-gray-800 border border-gray-600 rounded p-2 text-sm focus:outline-none focus:border-white" placeholder="https://...">
+                    </div>
+
+                    <div id="avatar-grid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-3 mt-4">
+                        <!-- Avatars populated here by JS -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t border-gray-700 shrink-0 flex justify-end gap-3">
+                <button onclick="window.closeSettingsModal()" class="px-6 py-2 rounded font-medium text-white hover:bg-gray-800 transition">Cancel</button>
+                <button onclick="window.saveSettings()" class="bg-white text-black px-6 py-2 rounded font-bold hover:bg-gray-300 transition shadow-lg">Save Profile</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div id="upload-modal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 sm:p-6" style="background-color: rgba(0,0,0,0.8);">
+        <div class="bg-brand-dark rounded-xl w-full max-w-2xl shadow-2xl modal-animate border border-gray-700 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center p-6 border-b border-gray-700 sticky top-0 bg-brand-dark z-10">
+                <h2 class="text-2xl font-bold text-white">Publish New Video</h2>
+                <button onclick="window.closeUploadModal()" class="text-gray-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <form id="upload-form" onsubmit="window.processUpload(event)" class="p-6 flex flex-col gap-4">
+                
+                <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded mb-2">
+                    <p class="text-blue-300 text-sm"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> <strong>Cloud Sync Enabled:</strong> Your metadata and thumbnails are saved permanently. For the actual video, provide a direct URL for cross-device streaming, or upload a local file for local playback.</p>
+                </div>
+
+                <div>
+                    <label class="block text-gray-300 font-bold mb-1">Title</label>
+                    <input type="text" id="upload-title" required placeholder="My Awesome Episode" class="w-full text-white bg-gray-800 border border-gray-600 rounded p-3 focus:outline-none focus:border-white">
+                </div>
+                
+                <div>
+                    <label class="block text-gray-300 font-bold mb-1">Description</label>
+                    <textarea id="upload-desc" required rows="3" class="w-full text-white bg-gray-800 border border-gray-600 rounded p-3 focus:outline-none focus:border-white"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-gray-300 font-bold mb-1">Category</label>
+                        <select id="upload-category" class="w-full text-white bg-gray-800 border border-gray-600 rounded p-3 focus:outline-none focus:border-white">
+                            <option value="My Series">My Series</option>
+                            <option value="Shorts">Shorts</option>
+                            <option value="Behind the Scenes">Behind the Scenes</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 font-bold mb-1">Duration Format</label>
+                        <input type="text" id="upload-duration" placeholder="e.g. 10m 20s" required class="w-full text-white bg-gray-800 border border-gray-600 rounded p-3 focus:outline-none focus:border-white">
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <label class="block text-gray-300 font-bold mb-1">Thumbnail Image (Required)</label>
+                    <input type="file" id="upload-thumb" accept="image/*" required class="w-full text-gray-400 bg-gray-800 border border-gray-600 rounded p-2 text-sm focus:outline-none focus:border-white">
+                </div>
+
+                <div class="mt-2 border-t border-gray-700 pt-4">
+                    <label class="block text-gray-300 font-bold mb-1">Video Source</label>
+                    <div class="flex flex-col gap-3">
+                        <input type="url" id="upload-video-url" placeholder="Paste Direct Video URL (e.g. .mp4 link) for Cloud" class="w-full text-white bg-gray-800 border border-gray-600 rounded p-3 focus:outline-none focus:border-white">
+                        <div class="text-center text-gray-500 font-bold text-sm">OR</div>
+                        <input type="file" id="upload-video-file" accept="video/mp4,video/*" class="w-full text-gray-400 bg-gray-800 border border-gray-600 rounded p-2 text-sm focus:outline-none focus:border-white">
+                    </div>
+                </div>
+
+                <div id="upload-error" class="text-brand-red text-sm hidden font-bold mt-2"></div>
+                
+                <button type="submit" id="upload-submit-btn" class="bg-white text-black font-bold py-3 rounded mt-4 hover:bg-gray-300 transition flex items-center justify-center gap-2 shadow-lg">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Publish to Cloud
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Movie Details Modal -->
+    <div id="movie-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 sm:p-6" style="background-color: rgba(0,0,0,0.7);">
+        <div class="absolute inset-0" onclick="window.closeModal()"></div>
+        <div id="modal-content" class="relative bg-brand-dark rounded-xl overflow-hidden w-full max-w-4xl shadow-2xl modal-animate flex flex-col max-h-[90vh]">
+            <button onclick="window.closeModal()" class="absolute top-4 right-4 z-50 bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition border border-gray-400/50">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div class="relative w-full h-64 sm:h-96 bg-cover bg-center" id="modal-banner">
+                <div class="absolute inset-0 bg-gradient-to-t from-brand-dark to-transparent"></div>
+                <div class="absolute bottom-6 left-6 sm:left-10 z-10 w-full pr-10">
+                    <h2 id="modal-title" class="text-3xl sm:text-5xl font-bold mb-4 drop-shadow-lg text-white">Movie Title</h2>
+                    <div class="flex gap-3">
+                        <button id="modal-play-btn" class="bg-white text-black px-6 py-2 rounded flex items-center gap-2 font-bold hover:bg-gray-200 transition shadow-lg">
+                            <i class="fa-solid fa-play"></i> Play
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 sm:p-10 flex flex-col md:flex-row gap-8 overflow-y-auto custom-scrollbar">
+                <div class="md:w-2/3">
+                    <div class="flex items-center gap-3 mb-4 text-sm font-medium">
+                        <span class="text-green-500 font-bold">New Release</span>
+                        <span id="modal-year" class="text-gray-300"></span>
+                        <span id="modal-duration" class="text-gray-300"></span>
+                        <span class="border border-gray-600 px-1 rounded text-gray-300 text-xs shadow-sm">HD</span>
+                    </div>
+                    <p id="modal-desc" class="text-white text-sm sm:text-base leading-relaxed"></p>
+                </div>
+                <div class="md:w-1/3 flex flex-col gap-4 text-sm">
+                    <div><span class="text-gray-500 block mb-1">Creator:</span><span id="modal-creator" class="text-gray-300 leading-tight"></span></div>
+                    <div><span class="text-gray-500 block mb-1">Category:</span><span id="modal-category" class="text-gray-300 leading-tight"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-20 right-4 bg-white text-black font-bold px-6 py-3 rounded shadow-2xl z-[300] transform transition-transform translate-x-full opacity-0 flex items-center gap-2 duration-300 border-l-4 border-green-500">
+        <i class="fa-solid fa-circle-check text-green-500"></i>
+        <span id="toast-msg">Success!</span>
+    </div>
+
+    <!-- Firebase and Logic Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, setDoc, deleteDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Initialization
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'pronustream-app';
+        let currentUser = null;
+
+        // Application State
+        let videos = [];
+        let currentActiveMovie = null;
+        let selectedAvatar = "";
+
+        // Avatar Data
+        const AVATARS = [
+            // Cars
+            "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1503376762361-12c8b868a25c?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=150&h=150&fit=crop",
+            // Women
+            "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop",
+            // Men
+            "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&h=150&fit=crop",
+            // Heroes/Abstract
+            "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?w=150&h=150&fit=crop", // Spider
+            "https://images.unsplash.com/photo-1531259683007-016a7b628fc3?w=150&h=150&fit=crop", // Batman vibe
+            "https://images.unsplash.com/photo-1501432377862-3d0432b87a14?w=150&h=150&fit=crop", // Sci-fi
+            "https://images.unsplash.com/photo-1535666669445-e8c15cd2e7f9?w=150&h=150&fit=crop", // Cyber
+            // Landscapes
+            "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1506744626753-1fa760472641?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=150&h=150&fit=crop",
+            "https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=150&h=150&fit=crop"
+        ];
+
+        // Ensure Auth initializes first
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+
+        // UI Setup
+        document.addEventListener('DOMContentLoaded', () => {
+            setupNavbarScroll();
+            initAuth();
+            populateAvatarGrid();
+        });
+
+        // Firebase Auth State Listener
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                setupCloudListeners();
+                loadUserProfile();
+            }
+        });
+
+        // -------------------------
+        // REALTIME CLOUD LISTENERS
+        // -------------------------
+        function setupCloudListeners() {
+            if (!currentUser) return;
+            
+            const publicVideosRef = collection(db, 'artifacts', appId, 'public', 'data', 'pronustream_videos');
+            
+            onSnapshot(publicVideosRef, (snapshot) => {
+                videos = [];
+                snapshot.forEach((doc) => {
+                    videos.push({ id: doc.id, ...doc.data() });
+                });
+                
+                // Sort client-side (Rule 2)
+                videos.sort((a, b) => b.createdAt - a.createdAt);
+                
+                renderRows();
+                if (videos.length > 0) {
+                    updateHero(videos[0]);
+                } else {
+                    setEmptyHeroState();
+                }
+
+                // Hide loader
+                const loader = document.getElementById('loading-overlay');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 500);
+                }
+            }, (error) => {
+                console.error("Firestore Error:", error);
+                showToast("Error connecting to database.");
+            });
+        }
+
+        // -------------------------
+        // USER PROFILE LOGIC
+        // -------------------------
+        function loadUserProfile() {
+            if (!currentUser) return;
+            const profileRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'profile');
+            onSnapshot(profileRef, (snapshot) => {
+                let found = false;
+                snapshot.forEach((docSnap) => {
+                    if (docSnap.id === 'settings') {
+                        found = true;
+                        const data = docSnap.data();
+                        document.getElementById('nav-profile-pic').src = data.avatar || AVATARS[0];
+                        document.getElementById('settings-username').value = data.username || "Creator";
+                        selectedAvatar = data.avatar || AVATARS[0];
+                    }
+                });
+                if (!found) {
+                    selectedAvatar = AVATARS[0];
+                    document.getElementById('nav-profile-pic').src = selectedAvatar;
+                }
+                highlightSelectedAvatar();
+            }, (error) => console.error(error));
+        }
+
+        window.openSettingsModal = () => {
+            document.getElementById('settings-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            highlightSelectedAvatar();
+        };
+
+        window.closeSettingsModal = () => {
+            document.getElementById('settings-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        };
+
+        function populateAvatarGrid() {
+            const grid = document.getElementById('avatar-grid');
+            let html = '';
+            AVATARS.forEach((url, i) => {
+                html += `<img src="${url}" class="w-16 h-16 object-cover rounded cursor-pointer avatar-option" onclick="window.selectAvatar('${url}')" id="avatar-${i}">`;
+            });
+            grid.innerHTML = html;
+        }
+
+        window.selectAvatar = (url) => {
+            selectedAvatar = url;
+            document.getElementById('settings-custom-pfp').value = ""; // Clear custom input
+            highlightSelectedAvatar();
+        };
+
+        function highlightSelectedAvatar() {
+            const options = document.querySelectorAll('.avatar-option');
+            options.forEach(opt => opt.classList.remove('avatar-selected'));
+            options.forEach(opt => {
+                if(opt.src === selectedAvatar) opt.classList.add('avatar-selected');
+            });
+        }
+
+        window.saveSettings = async () => {
+            if (!currentUser) return;
+            const customUrl = document.getElementById('settings-custom-pfp').value;
+            const finalAvatar = customUrl.trim() !== "" ? customUrl : selectedAvatar;
+            const username = document.getElementById('settings-username').value || "Creator";
+
+            try {
+                const profileDoc = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile', 'settings');
+                await setDoc(profileDoc, {
+                    avatar: finalAvatar,
+                    username: username
+                });
+                window.closeSettingsModal();
+                showToast("Profile Saved!");
+            } catch (error) {
+                console.error("Save Profile Error:", error);
+                alert("Error saving profile.");
+            }
+        };
+
+        // -------------------------
+        // UI RENDERING
+        // -------------------------
+        function setupNavbarScroll() {
+            const navbar = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.remove('from-black/80', 'to-transparent');
+                    navbar.classList.add('bg-brand-dark', 'shadow-md');
+                } else {
+                    navbar.classList.add('from-black/80', 'to-transparent');
+                    navbar.classList.remove('bg-brand-dark', 'shadow-md');
+                }
+            });
+        }
+
+        function renderRows() {
+            const content = document.getElementById('content');
+            content.innerHTML = ''; 
+            
+            if (videos.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-20 px-6 border-2 border-dashed border-gray-700 rounded-2xl bg-gray-900/30 mt-8">
+                        <i class="fa-solid fa-video-slash text-6xl text-gray-700 mb-6 block"></i>
+                        <h2 class="text-2xl font-bold text-gray-300 mb-3">No Videos Published Yet</h2>
+                        <p class="text-gray-500 max-w-lg mx-auto">Your Pronustream studio is connected to the cloud but empty. Ready to release your first series? Click the white 'Upload Video' button in the menu above!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const categories = ['My Series', 'Shorts', 'Behind the Scenes'];
+
+            categories.forEach(category => {
+                let categoryMovies = videos.filter(m => m.category === category);
+                if(categoryMovies.length === 0) return;
+
+                const rowId = `row-${category.replace(/\s+/g, '-').toLowerCase()}`;
+                
+                const rowHTML = `
+                    <div class="relative group">
+                        <h2 class="text-white text-xl md:text-2xl font-bold mb-3 px-2 flex items-center gap-2 cursor-pointer hover:text-gray-300 transition">
+                            ${category} <i class="fa-solid fa-chevron-right text-sm opacity-0 group-hover:opacity-100 transition-opacity text-brand-red"></i>
+                        </h2>
+                        <div class="relative">
+                            <button onclick="window.scrollRow('${rowId}', -1)" class="absolute left-0 top-0 bottom-0 z-40 w-12 bg-black/50 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center rounded-l">
+                                <i class="fa-solid fa-chevron-left text-2xl scale-125"></i>
+                            </button>
+                            <div id="${rowId}" class="flex gap-2 md:gap-4 overflow-x-auto hide-scroll py-8 px-2 scroll-smooth">
+                                ${categoryMovies.map(movie => createCard(movie)).join('')}
+                            </div>
+                            <button onclick="window.scrollRow('${rowId}', 1)" class="absolute right-0 top-0 bottom-0 z-40 w-12 bg-black/50 hover:bg-black/80 text-white opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center rounded-r">
+                                <i class="fa-solid fa-chevron-right text-2xl scale-125"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                content.insertAdjacentHTML('beforeend', rowHTML);
+            });
+        }
+
+        function createCard(movie) {
+            const safeMovieData = encodeURIComponent(JSON.stringify(movie));
+            // Show delete button ONLY if the current user created it
+            const isCreator = currentUser && movie.creatorId === currentUser.uid;
+            const deleteBtn = isCreator ? `
+                <button onclick="event.stopPropagation(); window.deleteVideo('${movie.id}')" class="bg-black/60 text-gray-400 w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 transition ml-auto border border-gray-600 hover:border-red-500" title="Delete from Cloud">
+                    <i class="fa-solid fa-trash text-sm"></i>
+                </button>
+            ` : '';
+
+            return `
+                <div class="movie-card relative flex-none w-[160px] h-[90px] sm:w-[220px] sm:h-[124px] md:w-[280px] md:h-[157px] bg-gray-800 rounded-md overflow-hidden cursor-pointer shadow-lg"
+                     onclick="window.openModalWithData('${safeMovieData}')">
+                    <img src="${movie.thumbnail}" alt="${movie.title}" class="w-full h-full object-cover rounded-md absolute inset-0">
+                    <div class="movie-card-info absolute inset-0 bg-gradient-to-t from-brand-dark via-brand-dark/80 to-transparent p-3 sm:p-4 flex flex-col justify-end">
+                        <div class="flex items-center gap-2 mb-2">
+                            <button onclick="event.stopPropagation(); window.playVideo('${movie.id}');" class="bg-white text-black w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-300 transition shadow-lg">
+                                <i class="fa-solid fa-play text-sm pl-0.5"></i>
+                            </button>
+                            ${deleteBtn}
+                        </div>
+                        <h3 class="text-white font-bold text-xs sm:text-sm truncate">${movie.title}</h3>
+                        <div class="flex items-center gap-2 text-[10px] sm:text-xs font-medium mt-1">
+                            <span class="text-green-500">New</span>
+                            <span class="text-gray-300">${movie.duration}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateHero(movie) {
+            const hero = document.getElementById('hero');
+            hero.style.backgroundImage = `url('${movie.thumbnail}')`; // Use thumb as banner
+            const heroContainer = document.getElementById('hero-content');
+            heroContainer.innerHTML = `
+                <h2 class="text-4xl md:text-6xl lg:text-7xl font-bold text-white drop-shadow-lg mb-2 tracking-tight">${movie.title}</h2>
+                <p class="text-white text-sm md:text-lg font-medium drop-shadow-md line-clamp-3 max-w-2xl mt-4">
+                    ${movie.desc}
+                </p>
+                <div class="flex items-center gap-3 mt-4">
+                    <button onclick="window.playVideo('${movie.id}')" class="bg-white text-black px-6 md:px-8 py-2 md:py-3 rounded flex items-center gap-2 font-bold hover:bg-gray-200 transition shadow-xl">
+                        <i class="fa-solid fa-play text-xl"></i> Play
+                    </button>
+                    <button onclick="window.openModal('${movie.id}')" class="bg-gray-500/70 text-white px-6 md:px-8 py-2 md:py-3 rounded flex items-center gap-2 font-bold hover:bg-gray-500/90 transition shadow-xl border border-gray-400/30">
+                        <i class="fa-solid fa-circle-info text-xl"></i> More Info
+                    </button>
+                </div>
+            `;
+        }
+
+        function setEmptyHeroState() {
+            const hero = document.getElementById('hero');
+            hero.style.backgroundImage = 'none'; 
+            hero.style.backgroundColor = '#141414';
+            document.getElementById('hero-content').innerHTML = `
+                <h1 class="logo-font text-5xl md:text-7xl font-bold text-white drop-shadow-lg mb-2">PRONUSTREAM</h1>
+                <p class="text-white text-lg mt-4 max-w-lg">Connected to Cloud. Your workspace is currently empty. Click 'Upload Video' in the navigation bar to release your first series!</p>
+            `;
+        }
+
+        window.scrollRow = (rowId, direction) => {
+            const row = document.getElementById(rowId);
+            const scrollAmount = row.clientWidth * 0.75;
+            row.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+        };
+
+        // -------------------------
+        // MODAL & VIDEO PLAYER
+        // -------------------------
+        window.openModal = (movieId) => {
+            const movie = videos.find(m => m.id === movieId);
+            if (movie) _openModalLogic(movie);
+        };
+
+        window.openModalWithData = (encodedData) => {
+            const movie = JSON.parse(decodeURIComponent(encodedData));
+            _openModalLogic(movie);
+        };
+
+        function _openModalLogic(movie) {
+            currentActiveMovie = movie;
+            document.getElementById('modal-banner').style.backgroundImage = `url('${movie.thumbnail}')`;
+            document.getElementById('modal-title').innerText = movie.title;
+            document.getElementById('modal-year').innerText = movie.year;
+            document.getElementById('modal-duration').innerText = movie.duration;
+            document.getElementById('modal-desc').innerText = movie.desc;
+            document.getElementById('modal-creator').innerText = movie.creatorName || "Unknown Creator";
+            document.getElementById('modal-category').innerText = movie.category;
+            
+            document.getElementById('modal-play-btn').onclick = () => window.playVideo(movie.id);
+            document.getElementById('movie-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        window.closeModal = () => {
+            document.getElementById('movie-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        };
+
+        window.playVideo = (movieId = null) => {
+            window.closeModal();
+            let videoSrcToPlay = 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'; // Fallback
+            
+            if (movieId) {
+                const movie = videos.find(m => m.id === movieId);
+                if (movie && movie.videoSrc) videoSrcToPlay = movie.videoSrc;
+            } else if (currentActiveMovie && currentActiveMovie.videoSrc) {
+                videoSrcToPlay = currentActiveMovie.videoSrc;
+            } else if (videos.length > 0 && videos[0].videoSrc) {
+                 videoSrcToPlay = videos[0].videoSrc;
+            }
+
+            const player = document.getElementById('video-player');
+            const video = document.getElementById('html-video');
+            const source = document.getElementById('video-source');
+            
+            source.src = videoSrcToPlay;
+            video.load(); // Reload source
+            player.classList.remove('hidden');
+            player.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            video.play().catch(e => console.warn("Autoplay prevented:", e));
+        };
+
+        window.closeVideo = () => {
+            const player = document.getElementById('video-player');
+            const video = document.getElementById('html-video');
+            video.pause();
+            video.currentTime = 0;
+            player.classList.add('hidden');
+            player.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        };
+
+        // -------------------------
+        // UPLOAD & CLOUD LOGIC
+        // -------------------------
+        window.openUploadModal = () => {
+            document.getElementById('upload-modal').classList.remove('hidden');
+            document.getElementById('upload-error').classList.add('hidden');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeUploadModal = () => {
+            document.getElementById('upload-modal').classList.add('hidden');
+            document.getElementById('upload-form').reset();
+            document.body.style.overflow = 'auto';
+            resetUploadBtn();
+        };
+
+        function resetUploadBtn() {
+            const btn = document.getElementById('upload-submit-btn');
+            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Publish to Cloud';
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function showUploadError(msg) {
+            const errDiv = document.getElementById('upload-error');
+            errDiv.innerText = msg;
+            errDiv.classList.remove('hidden');
+            resetUploadBtn();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            setTimeout(() => toast.classList.add('translate-x-full', 'opacity-0'), 3000);
+        }
+
+        // Compress image to Base64 for Firestore storage (1MB limit constraint bypass for thumbs)
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = event => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 640; // HD aspect base
+                        const MAX_HEIGHT = 360;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7)); // Compress
+                    };
+                    img.onerror = error => reject(error);
+                };
+            });
+        }
+
+        window.processUpload = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return showUploadError("You must be signed in to upload.");
+            
+            const btn = document.getElementById('upload-submit-btn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Syncing to Cloud...';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('upload-error').classList.add('hidden');
+
+            const title = document.getElementById('upload-title').value;
+            const desc = document.getElementById('upload-desc').value;
+            const category = document.getElementById('upload-category').value;
+            const duration = document.getElementById('upload-duration').value;
+            
+            const thumbFile = document.getElementById('upload-thumb').files[0];
+            const videoUrl = document.getElementById('upload-video-url').value;
+            const videoFile = document.getElementById('upload-video-file').files[0];
+
+            if (!thumbFile) return showUploadError("Thumbnail is required.");
+            if (!videoUrl && !videoFile) return showUploadError("Please provide a Video URL or upload a file.");
+
+            try {
+                // Compress Thumbnail to save to Firestore
+                const base64Thumb = await compressImage(thumbFile);
+                
+                // Handle Video Source
+                let finalVideoSrc = "";
+                if (videoUrl) {
+                    finalVideoSrc = videoUrl;
+                } else if (videoFile) {
+                    // Blob URLs only work locally for current session. Cloud requires real URL.
+                    finalVideoSrc = URL.createObjectURL(videoFile); 
+                }
+
+                // Get creator name
+                const username = document.getElementById('settings-username').value || "Creator";
+
+                const newVideo = {
+                    title: title,
+                    year: new Date().getFullYear().toString(),
+                    duration: duration,
+                    desc: desc,
+                    thumbnail: base64Thumb,
+                    category: category,
+                    videoSrc: finalVideoSrc,
+                    creatorId: currentUser.uid,
+                    creatorName: username,
+                    createdAt: Date.now()
+                };
+
+                // Add to Public Firestore Collection
+                const publicVideosRef = collection(db, 'artifacts', appId, 'public', 'data', 'pronustream_videos');
+                await addDoc(publicVideosRef, newVideo);
+                
+                window.closeUploadModal();
+                showToast("Uploaded to Cloud!");
+
+            } catch (error) {
+                console.error(error);
+                showUploadError("Error saving to cloud. Image may be too large.");
+            }
+        };
+
+        window.deleteVideo = async (id) => {
+            if(!currentUser) return;
+            if(confirm("Permanently delete this video from the cloud?")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pronustream_videos', id));
+                    showToast("Video Deleted from Cloud");
+                } catch(error) {
+                    console.error("Delete error", error);
+                    alert("Failed to delete video. You might not have permission.");
+                }
+            }
+        };
+
+        // Esc key listener
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                window.closeModal();
+                window.closeVideo();
+                window.closeUploadModal();
+                window.closeSettingsModal();
+            }
+        });
+    </script>
+</body>
+</html>
